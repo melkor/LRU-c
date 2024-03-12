@@ -32,23 +32,11 @@ void DumpLRUFrom(Page* fromPage) {
 	} while (fromPage->next != NULL);
 }
 
-Page* get(Page* firstPage, int value) {
-	Page *pageHasValue = NULL;
-	Page *currentPage = firstPage;
-	int i = 0;
-	do {
-		if (currentPage->value != NULL && *(currentPage->value) == value) {
-			pageHasValue = currentPage;
-		}
-		currentPage = currentPage->next;
-	} while (pageHasValue == NULL && currentPage->next != NULL);	
-	return pageHasValue;
-}
-
 Page* add(Page* firstPage, int value) {
 	Page *currentPage = firstPage;
 	Page *previousPage = NULL;
 	Page *pageToReturn = NULL;
+
 	while (currentPage->next != NULL) {
 		if (currentPage->value == NULL) {
 			Page* newPage = malloc(sizeof(Page));
@@ -73,11 +61,27 @@ Page* add(Page* firstPage, int value) {
 
 	if (!pageToReturn) {
 		pageToReturn = malloc(sizeof(Page));
+		pageToReturn->value = malloc(sizeof(int));
 		*(pageToReturn->value) = value;
 		pageToReturn->next = firstPage;
 	}
 
 	return pageToReturn;
+}
+
+Page* get(Page* firstPage, int value) {
+	Page *pageHasValue = NULL;
+	Page *currentPage = firstPage;
+	int i = 0;
+	do {
+		if (currentPage->value != NULL && *(currentPage->value) == value) {
+			pageHasValue = currentPage;
+			add(firstPage, value);
+			printf("coucou lala %d\n", *(firstPage->value));
+		}
+		currentPage = currentPage->next;
+	} while (pageHasValue == NULL && currentPage->next != NULL);	
+	return pageHasValue;
 }
 
 int main() {
@@ -128,8 +132,35 @@ int main() {
    lru = add(lru, 4);
    DumpLRUFrom(lru);
 
+   printf("-- add 1\n");
+   lru = add(lru, 1);
+   DumpLRUFrom(lru);
+
+   printf("-- add 3\n");
+   lru = add(lru, 3);
+   DumpLRUFrom(lru);
+
    printf("-- add 6\n");
    lru = add(lru, 6);
    DumpLRUFrom(lru);
+
+   printf("-- add 7\n");
+   lru = add(lru, 7);
+   DumpLRUFrom(lru);
+
+   printf("-- add 6\n");
+   lru = add(lru, 6);
+   DumpLRUFrom(lru);
+   return 0;
+
+   // FIXME
+   test = get(lru, 4);
+   if (test) {
+	printf("page with value 4 found\n");
+   } else {
+	printf("6 is not presents into LRU\n");
+   }
+   DumpLRUFrom(lru);
+
    return 0;
 }
