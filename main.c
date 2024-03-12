@@ -8,9 +8,16 @@ struct Page {
 };
 
 Page* initLRU(int size) {
+	if (size < 1) {
+		return NULL;
+	}
+
 	Page *firstPage = malloc(sizeof(Page));
+	firstPage->value = NULL;
+	firstPage->next = NULL;
+
 	Page *currentPage = firstPage;
-	for (int i = 1; i <= size; i++) {
+	for (int i = 1; i < size; i++) {
 		Page *nextPage = malloc(sizeof(Page));
 		currentPage->next = nextPage;
 		currentPage = nextPage;
@@ -29,7 +36,7 @@ void DumpLRUFrom(Page* fromPage) {
 		}
 		pageIndex++;
 		fromPage = fromPage->next;
-	} while (fromPage->next != NULL);
+	} while (fromPage);
 }
 
 Page* add(Page* firstPage, int value) {
@@ -151,14 +158,12 @@ int main() {
    printf("-- add 6\n");
    lru = add(lru, 6);
    DumpLRUFrom(lru);
-   return 0;
 
-   // FIXME
    test = get(lru, 4);
    if (test) {
 	printf("page with value 4 found\n");
    } else {
-	printf("6 is not presents into LRU\n");
+	printf("4 is not presents into LRU\n");
    }
    DumpLRUFrom(lru);
 
