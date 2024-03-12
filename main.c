@@ -75,7 +75,6 @@ Page* add(Page* firstPage, int value) {
 		pageToReturn = malloc(sizeof(Page));
 		*(pageToReturn->value) = value;
 		pageToReturn->next = firstPage;
-
 	}
 
 	return pageToReturn;
