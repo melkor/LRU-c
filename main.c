@@ -93,6 +93,12 @@ int main() {
    printf("-- add 1\n");
    lru = add(lru, 1);
    DumpLRUFrom(lru);
+   test = get(lru, 1);
+   if (test) {
+	printf("page with value 1 found\n");
+   } else {
+	printf("1 is not presents into LRU\n");
+   }
    
    printf("-- add 2\n");
    lru = add(lru, 2);
