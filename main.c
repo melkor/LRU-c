@@ -82,7 +82,6 @@ Page* get(Page** firstPage, int value) {
 
 	Page *currentPage = malloc(sizeof(Page));
 	currentPage = *firstPage;
-	int i = 0;
 	do {
 		if (currentPage->value != NULL && *(currentPage->value) == value) {
 			previousPage->next = currentPage->next;
@@ -160,6 +159,12 @@ int main() {
    Page *rr = get(&lru, 4);
    if (rr) {
    	printf("-- ok 4\n");
+   }
+   DumpLRUFrom(lru);
+
+   printf("-- test refresh 1\n");
+   if (get(&lru, 1)) {
+   	printf("-- ok 1\n");
    }
    DumpLRUFrom(lru);
 
