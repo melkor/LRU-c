@@ -76,40 +76,37 @@ Page* add(Page* firstPage, int value) {
 	return pageToReturn;
 }
 
-Page* get(Page* firstPage, int value) {
+Page* get(Page** firstPage, int value) {
 	Page *pageHasValue = NULL;
-	Page *currentPage = firstPage;
+	Page *previousPage = NULL;
+
+	Page *currentPage = malloc(sizeof(Page));
+	currentPage = *firstPage;
 	int i = 0;
 	do {
 		if (currentPage->value != NULL && *(currentPage->value) == value) {
-			pageHasValue = currentPage;
-			add(firstPage, value);
-			printf("coucou lala %d\n", *(firstPage->value));
+			previousPage->next = currentPage->next;
+			currentPage->next = *firstPage;
+
+			*firstPage = currentPage;
+			pageHasValue = *firstPage;
+			break;
 		}
+		previousPage = currentPage;
 		currentPage = currentPage->next;
-	} while (pageHasValue == NULL && currentPage->next != NULL);	
+	} while (pageHasValue == NULL && currentPage != NULL);	
 	return pageHasValue;
 }
 
 int main() {
    printf("Hello, World!\n");
    Page* lru = initLRU(5);
+
    DumpLRUFrom(lru);
-   Page* test = get(lru, 1);
-   if (test) {
-	printf("page found\n");
-   } else {
-	printf("1 is not presents into LRU\n");
-   }
+
    printf("-- add 1\n");
    lru = add(lru, 1);
    DumpLRUFrom(lru);
-   test = get(lru, 1);
-   if (test) {
-	printf("page with value 1 found\n");
-   } else {
-	printf("1 is not presents into LRU\n");
-   }
    
    printf("-- add 2\n");
    lru = add(lru, 2);
@@ -159,11 +156,10 @@ int main() {
    lru = add(lru, 6);
    DumpLRUFrom(lru);
 
-   test = get(lru, 4);
-   if (test) {
-	printf("page with value 4 found\n");
-   } else {
-	printf("4 is not presents into LRU\n");
+   printf("-- test refresh 4\n");
+   Page *rr = get(&lru, 4);
+   if (rr) {
+   	printf("-- ok 4\n");
    }
    DumpLRUFrom(lru);
 
