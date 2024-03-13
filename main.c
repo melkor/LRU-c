@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct Page Page;
 struct Page {
-	int *value;
+	void *value;
 	Page *next;
 };
 
@@ -30,7 +31,7 @@ void DumpLRUFrom(Page* fromPage) {
 	int pageIndex = 0; 
 	do {
 		if (fromPage->value != NULL) {
-			printf("page %d: %d\n", pageIndex, *fromPage->value);
+			printf("page %d: %d\n", pageIndex, *(int*)fromPage->value);
 		} else {
 			printf("page %d: no value\n", pageIndex);
 		}
@@ -39,7 +40,7 @@ void DumpLRUFrom(Page* fromPage) {
 	} while (fromPage);
 }
 
-void add(Page** firstPage, int value) {
+void add(Page** firstPage, void* value) {
 	Page *currentPage = *firstPage;
 	Page *previousPage = NULL;
 
@@ -47,7 +48,7 @@ void add(Page** firstPage, int value) {
 		if (currentPage->value == NULL || currentPage->next == NULL) {
 			Page* newPage = malloc(sizeof(newPage));
 			newPage->value = malloc(sizeof(value));
-			*(newPage->value) = value;
+			memcpy(newPage->value, value, sizeof(value));
 			newPage->next = *firstPage;
 			*firstPage = newPage;
 			while (currentPage && currentPage->next != NULL) {
@@ -57,7 +58,7 @@ void add(Page** firstPage, int value) {
 			previousPage->next = NULL;
 			free(currentPage);
 			break;
-		} else if (*currentPage->value == value) {
+		} else if (*(int *)currentPage->value == *(int *)value) {
 			if (previousPage) {
 				previousPage->next = currentPage->next;
 				currentPage->next = *firstPage;
@@ -77,7 +78,7 @@ Page* get(Page** firstPage, int value) {
 	Page *currentPage = malloc(sizeof(currentPage));
 	currentPage = *firstPage;
 	do {
-		if (currentPage->value != NULL && *(currentPage->value) == value) {
+		if (currentPage->value != NULL && *((int*)currentPage->value) == value) {
 			previousPage->next = currentPage->next;
 			currentPage->next = *firstPage;
 
@@ -96,61 +97,16 @@ int main() {
    Page* lru = initLRU(5);
 
    DumpLRUFrom(lru);
+   int valuesToCache[] = {1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
 
-   printf("-- add 1\n");
-   add(&lru, 1);
-   DumpLRUFrom(lru);
+   int length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
+   for (int i = 0; i < length; i++) {
+	int toCache = valuesToCache[i];
+	printf("-- add %d\n", toCache);
+	add(&lru, &toCache);
+	DumpLRUFrom(lru);
+   }
    
-   printf("-- add 2\n");
-   add(&lru, 2);
-   DumpLRUFrom(lru);
-
-   printf("-- add 3\n");
-   add(&lru, 3);
-   DumpLRUFrom(lru);
-
-   add(&lru, 2);
-   printf("-- add 2\n");
-   DumpLRUFrom(lru);
-
-
-   printf("-- add 3\n");
-   add(&lru, 3);
-   DumpLRUFrom(lru);
-
-   printf("-- add 4\n");
-   add(&lru, 4);
-   DumpLRUFrom(lru);
-
-   printf("-- add 5\n");
-   add(&lru, 5);
-   DumpLRUFrom(lru);
-
-   printf("-- add 4\n");
-   add(&lru, 4);
-   DumpLRUFrom(lru);
-
-   printf("-- add 1\n");
-   add(&lru, 1);
-   DumpLRUFrom(lru);
-
-   printf("-- add 3\n");
-   add(&lru, 3);
-   DumpLRUFrom(lru);
-
-   printf("-- add 6\n");
-   add(&lru, 6);
-   DumpLRUFrom(lru);
-
-   printf("-- add 7\n");
-   add(&lru, 7);
-   DumpLRUFrom(lru);
-
-   return 0;
-   printf("-- add 6\n");
-   add(&lru, 6);
-   DumpLRUFrom(lru);
-
    printf("-- test refresh 4\n");
    Page *rr = get(&lru, 4);
    if (rr) {
