@@ -42,15 +42,13 @@ void DumpLRUFrom(Page* fromPage) {
 void add(Page** firstPage, int value) {
 	Page *currentPage = *firstPage;
 	Page *previousPage = NULL;
-	Page *pageToReturn = NULL;
 
-	while (!pageToReturn) {
+	while (currentPage) {
 		if (currentPage->next == NULL || currentPage->value == NULL) {
 			Page* newPage = malloc(sizeof(newPage));
 			newPage->value = malloc(sizeof(newPage->value));
 			*(newPage->value) = value;
 			newPage->next = *firstPage;
-			pageToReturn = newPage;
 			*firstPage = newPage;
 			while (currentPage && currentPage->next != NULL) {
 				previousPage = currentPage;
@@ -64,8 +62,7 @@ void add(Page** firstPage, int value) {
 				previousPage->next = currentPage->next;
 				currentPage->next = *firstPage;
 			}
-			pageToReturn = currentPage;
-			*firstPage = pageToReturn;
+			*firstPage = currentPage;
 			break;
 		} 
 		previousPage = currentPage;
