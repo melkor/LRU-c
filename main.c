@@ -22,13 +22,15 @@ Page* initPage(int size) {
 		return NULL;
 	}
 
-	Page *firstPage = malloc(sizeof(firstPage));
+	Page *firstPage = malloc(sizeof(*firstPage));
 	firstPage->value = NULL;
 	firstPage->next = NULL;
 
 	Page *currentPage = firstPage;
 	for (int i = 1; i < size; i++) {
-		Page *nextPage = malloc(sizeof(nextPage));
+		Page *nextPage = malloc(sizeof(*nextPage));
+		nextPage->value = NULL;
+		nextPage->next = NULL;
 		currentPage->next = nextPage;
 		currentPage = nextPage;
 	}
@@ -36,11 +38,35 @@ Page* initPage(int size) {
 	return firstPage;
 }
 
+void destroy(Page* pages) {
+	while (pages->next) {
+		Page *previousPage = pages;
+		if (pages->next) {
+			Page *currentPage = pages->next;
+			while (currentPage->next) {
+				previousPage = currentPage;
+				currentPage = currentPage->next;
+			}
+			previousPage->next = NULL;
+			if (currentPage->value) {
+				free(currentPage->value);
+			}
+			free(currentPage);
+		}
+	}
+	if (pages->value) {
+		free(pages->value);
+	}
+	free(pages);
+}
+
 void dumpPagesFrom(Page* fromPage, char* (*format)(void*) ) {
 	int pageIndex = 0; 
 	do {
 		if (fromPage->value != NULL) {
-			printf("page %d: %s\n", pageIndex, format(fromPage->value));
+			char *toPrint = format(fromPage->value);
+			printf("page %d: %s\n", pageIndex, toPrint);
+			free(toPrint);
 		} else {
 			printf("page %d: no value\n", pageIndex);
 		}
@@ -49,15 +75,15 @@ void dumpPagesFrom(Page* fromPage, char* (*format)(void*) ) {
 	} while (fromPage);
 }
 
-void add(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
+void add(Page** firstPage, void* value, int (*cmpFunc)(void*, void*)) {
 	Page *currentPage = *firstPage;
 	Page *previousPage = NULL;
 
 	while (currentPage) {
 		if (currentPage->value == NULL || currentPage->next == NULL) {
-			Page* newPage = malloc(sizeof(newPage));
-			newPage->value = malloc(sizeof(value));
-			memcpy(newPage->value, value, sizeof(value));
+			Page* newPage = malloc(sizeof(*newPage));
+			newPage->value = malloc(sizeof(*value));
+			memcpy(newPage->value, value, sizeof(*value));
 			newPage->next = *firstPage;
 
 			*firstPage = newPage;
@@ -70,7 +96,7 @@ void add(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 			break;
 		} else if (currentPage->value != NULL) {
 			cmpFunction cf = {
-				compInt,
+				cmpFunc,
 				currentPage->value,
 				value
 			};
@@ -88,16 +114,18 @@ void add(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 	}
 }
 
-Page* get(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
+Page* get(Page** firstPage, void* value, int (*cmpFunc)(void*, void*)) {
+	if (cmpFunc == NULL) {
+		return NULL;
+	}
+	
 	Page *pageHasValue = NULL;
 	Page *previousPage = NULL;
-
-	Page *currentPage = malloc(sizeof(currentPage));
-	currentPage = *firstPage;
+	Page *currentPage = *firstPage;
 	do {
 		if (currentPage->value != NULL) {
 			cmpFunction cf = {
-				compInt,
+				cmpFunc,
 				currentPage->value,
 				value
 			};
@@ -137,12 +165,16 @@ void dump(LRU *lru) {
 	dumpPagesFrom(lru->Pages, lru->fmtFunction);
 }
 
+void clear(LRU *lru) {
+	destroy(lru->Pages);
+}
+
 LRU* initLRU(int size, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*)) {
 	if (size < 1) {
 		return NULL;
 	}
 
-	LRU *lru = malloc(sizeof(LRU));
+	LRU *lru = malloc(sizeof(*lru));
 	lru->Pages = initPage(size);
 	lru->cmpFunction = cmpFunction;
 	lru->fmtFunction = fmtFunction;
@@ -156,8 +188,12 @@ int compInt(void* valueA, void* valueB) {
 }
 
 char* formatInt(void* value) {
-	char* buff = malloc(255*sizeof(buff));
-	sprintf( buff, "%d", *(int*)value);
+	if (value == NULL) {
+		return "no value";
+	}
+	
+	char* buff = malloc(255*sizeof(*buff));
+	sprintf(buff, "%d", *(int*)value);
 	return buff;
 }
 
@@ -174,7 +210,7 @@ int main() {
    Page* pages = initPage(5);
 
    dumpPagesFrom(pages, formatInt);
-   int valuesToCache[] = {1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
+   int valuesToCache[] = {1}; //, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
 
    int length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
    for (int i = 0; i < length; i++) {
@@ -192,6 +228,8 @@ int main() {
 	Page *rr = get(&pages, &toRefresh, compInt);
    	dumpPagesFrom(pages, formatInt);
    }
+   destroy(pages);
+	return 0;
 
    int valA = 3;
    int valB = 3;
