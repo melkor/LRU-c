@@ -161,6 +161,14 @@ char* formatInt(void* value) {
 	return buff;
 }
 
+int compStr(void* valueA, void* valueB) {
+	return strcmp((char *)valueA, (char *)valueB) == 0;
+}
+
+char* formatStr(void* value) {
+	return (char *) value ;
+}
+
 int main() {
    printf("Hello, World!\n");
    Page* pages = initPage(5);
@@ -212,5 +220,27 @@ int main() {
 	read(lru, &toRead);
 	dump(lru);
    }
+
+   printf("\n\n- test LRU of char[]\n\n");
+   LRU *lruStr = initLRU(5, compStr, formatStr);
+
+   char testString[] = "coucou";
+   printf("\n-- cache %s\n", testString);
+   cache(lruStr, testString);
+   dump(lruStr);
+   
+   char testString2[] = "guigui";
+   printf("\n-- cache %s\n", testString2);
+   cache(lruStr, testString2);
+   dump(lruStr);
+   
+   char testString3[] = "tavu";
+   printf("\n-- cache %s\n", testString3);
+   cache(lruStr, testString3);
+   dump(lruStr);
+
+   printf("\n-- read %s\n", testString);
+   read(lruStr, testString);
+   dump(lruStr);
    return 0;
 }
