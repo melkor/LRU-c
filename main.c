@@ -46,7 +46,7 @@ void add(Page** firstPage, int value) {
 	while (currentPage) {
 		if (currentPage->value == NULL || currentPage->next == NULL) {
 			Page* newPage = malloc(sizeof(newPage));
-			newPage->value = malloc(sizeof(newPage->value));
+			newPage->value = malloc(sizeof(value));
 			*(newPage->value) = value;
 			newPage->next = *firstPage;
 			*firstPage = newPage;
