@@ -12,12 +12,12 @@ typedef struct {
     int (*function)(void*, void*);
     void* valueA;
     void* valueB;
-} compFunction;
-int execute(compFunction af) {
+} cmpFunction;
+int execute(cmpFunction af) {
     return af.function(af.valueA, af.valueB);
 }
 
-Page* initLRU(int size) {
+Page* initPage(int size) {
 	if (size < 1) {
 		return NULL;
 	}
@@ -36,7 +36,7 @@ Page* initLRU(int size) {
 	return firstPage;
 }
 
-void DumpLRUFrom(Page* fromPage) {
+void dumpPagesFrom(Page* fromPage) {
 	int pageIndex = 0; 
 	do {
 		if (fromPage->value != NULL) {
@@ -69,7 +69,7 @@ void add(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 			free(currentPage);
 			break;
 		} else if (currentPage->value != NULL) {
-			compFunction cf = {
+			cmpFunction cf = {
 				compInt,
 				currentPage->value,
 				value
@@ -96,7 +96,7 @@ Page* get(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 	currentPage = *firstPage;
 	do {
 		if (currentPage->value != NULL) {
-			compFunction cf = {
+			cmpFunction cf = {
 				compInt,
 				currentPage->value,
 				value
@@ -118,23 +118,54 @@ Page* get(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 	return pageHasValue;
 }
 
+typedef struct LRU LRU;
+struct LRU {
+	Page *Pages;
+	int (*cmpFunction)(void*, void*);
+};
+
+Page* read(LRU *lru, void* value) {
+	return get(&lru->Pages, value, lru->cmpFunction);
+}
+
+void cache(LRU *lru, void* value) {
+	add(&lru->Pages, value, lru->cmpFunction);
+}
+
+void dump(LRU *lru) {
+	dumpPagesFrom(lru->Pages);
+}
+
+LRU* initLRU(int size, int(*cmpFunction)(void*, void*)) {
+	if (size < 1) {
+		return NULL;
+	}
+
+	LRU *lru = malloc(sizeof(LRU));
+	lru->Pages = initPage(size);
+	lru->cmpFunction = cmpFunction;
+
+	return lru;
+}
+
+
 int compInt(void* valueA, void* valueB) {
 	return *(int *)valueA == *(int *)valueB;
 }
 
 int main() {
    printf("Hello, World!\n");
-   Page* lru = initLRU(5);
+   Page* pages = initPage(5);
 
-   DumpLRUFrom(lru);
+   dumpPagesFrom(pages);
    int valuesToCache[] = {1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
 
    int length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
    for (int i = 0; i < length; i++) {
 	int toCache = valuesToCache[i];
 	printf("-- add %d\n", toCache);
-	add(&lru, &toCache, compInt);
-	DumpLRUFrom(lru);
+	add(&pages, &toCache, compInt);
+	dumpPagesFrom(pages);
    }
    
    int valuesToRefresh[] = {4, 1, 1};
@@ -142,13 +173,13 @@ int main() {
    for (int i = 0; i < length; i++) {
 	int toRefresh = valuesToRefresh[i];
    	printf("-- refresh %d\n", toRefresh);
-	Page *rr = get(&lru, &toRefresh, compInt);
-   	DumpLRUFrom(lru);
+	Page *rr = get(&pages, &toRefresh, compInt);
+   	dumpPagesFrom(pages);
    }
 
    int valA = 3;
    int valB = 3;
-   compFunction cf = {
+   cmpFunction cf = {
 	compInt,
 	&valA,
 	&valB
@@ -156,6 +187,22 @@ int main() {
    int test = execute(cf);
    printf("-- test cmp: %d\n", test);
 
+   printf("\n\n- test LRU\n\n");
+   LRU *lru = initLRU(5, compInt);
+   length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
+   for (int i = 0; i < length; i++) {
+	int toCache = valuesToCache[i];
+	printf("-- cache %d\n", toCache);
+	cache(lru, &toCache);
+	dump(lru);
+   }
 
+   length = sizeof(valuesToRefresh) / sizeof(valuesToRefresh[0]);
+   for (int i = 0; i < length; i++) {
+	int toRead = valuesToRefresh[i];
+   	printf("-- read %d\n", toRead);
+	read(lru, &toRead);
+	dump(lru);
+   }
    return 0;
 }
