@@ -71,14 +71,14 @@ void add(Page** firstPage, void* value) {
 	}
 }
 
-Page* get(Page** firstPage, int value) {
+Page* get(Page** firstPage, void* value) {
 	Page *pageHasValue = NULL;
 	Page *previousPage = NULL;
 
 	Page *currentPage = malloc(sizeof(currentPage));
 	currentPage = *firstPage;
 	do {
-		if (currentPage->value != NULL && *((int*)currentPage->value) == value) {
+		if (currentPage->value != NULL && *((int*)currentPage->value) == *(int *)value) {
 			previousPage->next = currentPage->next;
 			currentPage->next = *firstPage;
 
@@ -107,18 +107,15 @@ int main() {
 	DumpLRUFrom(lru);
    }
    
-   printf("-- test refresh 4\n");
-   Page *rr = get(&lru, 4);
-   if (rr) {
-   	printf("-- ok 4\n");
+   int valuesToRefresh[] = {4, 1};
+   length = sizeof(valuesToRefresh) / sizeof(valuesToRefresh[0]);
+   for (int i = 0; i < length; i++) {
+	int toRefresh = valuesToRefresh[i];
+   	printf("-- refresh %d\n", toRefresh);
+	Page *rr = get(&lru, &toRefresh);
+   	DumpLRUFrom(lru);
    }
-   DumpLRUFrom(lru);
 
-   printf("-- test refresh 1\n");
-   if (get(&lru, 1)) {
-   	printf("-- ok 1\n");
-   }
-   DumpLRUFrom(lru);
 
    return 0;
 }
