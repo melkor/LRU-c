@@ -12,13 +12,13 @@ Page* initLRU(int size) {
 		return NULL;
 	}
 
-	Page *firstPage = malloc(sizeof(Page));
+	Page *firstPage = malloc(sizeof(firstPage));
 	firstPage->value = NULL;
 	firstPage->next = NULL;
 
 	Page *currentPage = firstPage;
 	for (int i = 1; i < size; i++) {
-		Page *nextPage = malloc(sizeof(Page));
+		Page *nextPage = malloc(sizeof(nextPage));
 		currentPage->next = nextPage;
 		currentPage = nextPage;
 	}
@@ -74,7 +74,7 @@ Page* get(Page** firstPage, int value) {
 	Page *pageHasValue = NULL;
 	Page *previousPage = NULL;
 
-	Page *currentPage = malloc(sizeof(Page));
+	Page *currentPage = malloc(sizeof(currentPage));
 	currentPage = *firstPage;
 	do {
 		if (currentPage->value != NULL && *(currentPage->value) == value) {
