@@ -102,10 +102,12 @@ Page* get(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 				value
 			};
 			if (execute(cf)) {
-				previousPage->next = currentPage->next;
-				currentPage->next = *firstPage;
+				if (previousPage) {
+					previousPage->next = currentPage->next;
+					currentPage->next = *firstPage;
 
-				*firstPage = currentPage;
+					*firstPage = currentPage;
+				}
 				pageHasValue = *firstPage;
 				break;
 			}
@@ -135,7 +137,7 @@ int main() {
 	DumpLRUFrom(lru);
    }
    
-   int valuesToRefresh[] = {4, 1};
+   int valuesToRefresh[] = {4, 1, 1};
    length = sizeof(valuesToRefresh) / sizeof(valuesToRefresh[0]);
    for (int i = 0; i < length; i++) {
 	int toRefresh = valuesToRefresh[i];
