@@ -36,11 +36,11 @@ Page* initPage(int size) {
 	return firstPage;
 }
 
-void dumpPagesFrom(Page* fromPage) {
+void dumpPagesFrom(Page* fromPage, char* (*format)(void*) ) {
 	int pageIndex = 0; 
 	do {
 		if (fromPage->value != NULL) {
-			printf("page %d: %d\n", pageIndex, *(int*)fromPage->value);
+			printf("page %d: %s\n", pageIndex, format(fromPage->value));
 		} else {
 			printf("page %d: no value\n", pageIndex);
 		}
@@ -122,6 +122,7 @@ typedef struct LRU LRU;
 struct LRU {
 	Page *Pages;
 	int (*cmpFunction)(void*, void*);
+	char* (*fmtFunction)(void*);
 };
 
 Page* read(LRU *lru, void* value) {
@@ -133,10 +134,10 @@ void cache(LRU *lru, void* value) {
 }
 
 void dump(LRU *lru) {
-	dumpPagesFrom(lru->Pages);
+	dumpPagesFrom(lru->Pages, lru->fmtFunction);
 }
 
-LRU* initLRU(int size, int(*cmpFunction)(void*, void*)) {
+LRU* initLRU(int size, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*)) {
 	if (size < 1) {
 		return NULL;
 	}
@@ -144,6 +145,7 @@ LRU* initLRU(int size, int(*cmpFunction)(void*, void*)) {
 	LRU *lru = malloc(sizeof(LRU));
 	lru->Pages = initPage(size);
 	lru->cmpFunction = cmpFunction;
+	lru->fmtFunction = fmtFunction;
 
 	return lru;
 }
@@ -153,11 +155,17 @@ int compInt(void* valueA, void* valueB) {
 	return *(int *)valueA == *(int *)valueB;
 }
 
+char* formatInt(void* value) {
+	char* buff = malloc(255*sizeof(buff));
+	sprintf( buff, "%d", *(int*)value);
+	return buff;
+}
+
 int main() {
    printf("Hello, World!\n");
    Page* pages = initPage(5);
 
-   dumpPagesFrom(pages);
+   dumpPagesFrom(pages, formatInt);
    int valuesToCache[] = {1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
 
    int length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
@@ -165,7 +173,7 @@ int main() {
 	int toCache = valuesToCache[i];
 	printf("-- add %d\n", toCache);
 	add(&pages, &toCache, compInt);
-	dumpPagesFrom(pages);
+	dumpPagesFrom(pages, formatInt);
    }
    
    int valuesToRefresh[] = {4, 1, 1};
@@ -174,7 +182,7 @@ int main() {
 	int toRefresh = valuesToRefresh[i];
    	printf("-- refresh %d\n", toRefresh);
 	Page *rr = get(&pages, &toRefresh, compInt);
-   	dumpPagesFrom(pages);
+   	dumpPagesFrom(pages, formatInt);
    }
 
    int valA = 3;
@@ -188,7 +196,7 @@ int main() {
    printf("-- test cmp: %d\n", test);
 
    printf("\n\n- test LRU\n\n");
-   LRU *lru = initLRU(5, compInt);
+   LRU *lru = initLRU(5, compInt, formatInt);
    length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
    for (int i = 0; i < length; i++) {
 	int toCache = valuesToCache[i];
