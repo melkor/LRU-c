@@ -8,6 +8,15 @@ struct Page {
 	Page *next;
 };
 
+typedef struct {
+    int (*function)(void*, void*);
+    void* valueA;
+    void* valueB;
+} compFunction;
+int execute(compFunction af) {
+    return af.function(af.valueA, af.valueB);
+}
+
 Page* initLRU(int size) {
 	if (size < 1) {
 		return NULL;
@@ -40,7 +49,7 @@ void DumpLRUFrom(Page* fromPage) {
 	} while (fromPage);
 }
 
-void add(Page** firstPage, void* value) {
+void add(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 	Page *currentPage = *firstPage;
 	Page *previousPage = NULL;
 
@@ -50,6 +59,7 @@ void add(Page** firstPage, void* value) {
 			newPage->value = malloc(sizeof(value));
 			memcpy(newPage->value, value, sizeof(value));
 			newPage->next = *firstPage;
+
 			*firstPage = newPage;
 			while (currentPage && currentPage->next != NULL) {
 				previousPage = currentPage;
@@ -58,38 +68,56 @@ void add(Page** firstPage, void* value) {
 			previousPage->next = NULL;
 			free(currentPage);
 			break;
-		} else if (*(int *)currentPage->value == *(int *)value) {
-			if (previousPage) {
-				previousPage->next = currentPage->next;
-				currentPage->next = *firstPage;
+		} else if (currentPage->value != NULL) {
+			compFunction cf = {
+				compInt,
+				currentPage->value,
+				value
+			};
+			if (execute(cf)) {
+				if (previousPage) {
+					previousPage->next = currentPage->next;
+					currentPage->next = *firstPage;
+				}
+				*firstPage = currentPage;
+				break;
 			}
-			*firstPage = currentPage;
-			break;
 		} 
 		previousPage = currentPage;
 		currentPage = currentPage->next;
 	}
 }
 
-Page* get(Page** firstPage, void* value) {
+Page* get(Page** firstPage, void* value, int (*compInt)(void*, void*)) {
 	Page *pageHasValue = NULL;
 	Page *previousPage = NULL;
 
 	Page *currentPage = malloc(sizeof(currentPage));
 	currentPage = *firstPage;
 	do {
-		if (currentPage->value != NULL && *((int*)currentPage->value) == *(int *)value) {
-			previousPage->next = currentPage->next;
-			currentPage->next = *firstPage;
+		if (currentPage->value != NULL) {
+			compFunction cf = {
+				compInt,
+				currentPage->value,
+				value
+			};
+			if (execute(cf)) {
+				previousPage->next = currentPage->next;
+				currentPage->next = *firstPage;
 
-			*firstPage = currentPage;
-			pageHasValue = *firstPage;
-			break;
+				*firstPage = currentPage;
+				pageHasValue = *firstPage;
+				break;
+			}
 		}
 		previousPage = currentPage;
 		currentPage = currentPage->next;
 	} while (pageHasValue == NULL && currentPage != NULL);	
 	return pageHasValue;
+}
+
+int compInt(void* valueA, void* valueB) {
+	return *(int *)valueA == *(int *)valueB;
 }
 
 int main() {
@@ -103,7 +131,7 @@ int main() {
    for (int i = 0; i < length; i++) {
 	int toCache = valuesToCache[i];
 	printf("-- add %d\n", toCache);
-	add(&lru, &toCache);
+	add(&lru, &toCache, compInt);
 	DumpLRUFrom(lru);
    }
    
@@ -112,9 +140,19 @@ int main() {
    for (int i = 0; i < length; i++) {
 	int toRefresh = valuesToRefresh[i];
    	printf("-- refresh %d\n", toRefresh);
-	Page *rr = get(&lru, &toRefresh);
+	Page *rr = get(&lru, &toRefresh, compInt);
    	DumpLRUFrom(lru);
    }
+
+   int valA = 3;
+   int valB = 3;
+   compFunction cf = {
+	compInt,
+	&valA,
+	&valB
+   };
+   int test = execute(cf);
+   printf("-- test cmp: %d\n", test);
 
 
    return 0;
