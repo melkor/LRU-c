@@ -39,41 +39,38 @@ void DumpLRUFrom(Page* fromPage) {
 	} while (fromPage);
 }
 
-Page* add(Page* firstPage, int value) {
-	Page *currentPage = firstPage;
+void add(Page** firstPage, int value) {
+	Page *currentPage = *firstPage;
 	Page *previousPage = NULL;
 	Page *pageToReturn = NULL;
 
-	while (currentPage->next != NULL) {
-		if (currentPage->value == NULL) {
-			Page* newPage = malloc(sizeof(Page));
-			newPage->value = malloc(sizeof(int));
+	while (!pageToReturn) {
+		if (currentPage->next == NULL || currentPage->value == NULL) {
+			Page* newPage = malloc(sizeof(newPage));
+			newPage->value = malloc(sizeof(newPage->value));
 			*(newPage->value) = value;
-			newPage->next = firstPage;
+			newPage->next = *firstPage;
 			pageToReturn = newPage;
+			*firstPage = newPage;
+			while (currentPage && currentPage->next != NULL) {
+				previousPage = currentPage;
+				currentPage = currentPage->next;
+			}
+			previousPage->next = NULL;
+			free(currentPage);
+			break;
 		} else if (*currentPage->value == value) {
 			if (previousPage) {
 				previousPage->next = currentPage->next;
-				currentPage->next = firstPage;
+				currentPage->next = *firstPage;
 			}
 			pageToReturn = currentPage;
-			return pageToReturn;
+			*firstPage = pageToReturn;
+			break;
 		} 
 		previousPage = currentPage;
 		currentPage = currentPage->next;
 	}
-
-	previousPage->next = NULL;
-	free(currentPage);
-
-	if (!pageToReturn) {
-		pageToReturn = malloc(sizeof(Page));
-		pageToReturn->value = malloc(sizeof(int));
-		*(pageToReturn->value) = value;
-		pageToReturn->next = firstPage;
-	}
-
-	return pageToReturn;
 }
 
 Page* get(Page** firstPage, int value) {
@@ -104,55 +101,57 @@ int main() {
    DumpLRUFrom(lru);
 
    printf("-- add 1\n");
-   lru = add(lru, 1);
+   add(&lru, 1);
    DumpLRUFrom(lru);
    
    printf("-- add 2\n");
-   lru = add(lru, 2);
+   add(&lru, 2);
    DumpLRUFrom(lru);
 
    printf("-- add 3\n");
-   lru = add(lru, 3);
+   add(&lru, 3);
    DumpLRUFrom(lru);
 
-   lru = add(lru, 2);
+   add(&lru, 2);
    printf("-- add 2\n");
    DumpLRUFrom(lru);
 
+
    printf("-- add 3\n");
-   lru = add(lru, 3);
+   add(&lru, 3);
    DumpLRUFrom(lru);
 
    printf("-- add 4\n");
-   lru = add(lru, 4);
+   add(&lru, 4);
    DumpLRUFrom(lru);
 
    printf("-- add 5\n");
-   lru = add(lru, 5);
+   add(&lru, 5);
    DumpLRUFrom(lru);
 
    printf("-- add 4\n");
-   lru = add(lru, 4);
+   add(&lru, 4);
    DumpLRUFrom(lru);
 
    printf("-- add 1\n");
-   lru = add(lru, 1);
+   add(&lru, 1);
    DumpLRUFrom(lru);
 
    printf("-- add 3\n");
-   lru = add(lru, 3);
+   add(&lru, 3);
    DumpLRUFrom(lru);
 
    printf("-- add 6\n");
-   lru = add(lru, 6);
+   add(&lru, 6);
    DumpLRUFrom(lru);
 
    printf("-- add 7\n");
-   lru = add(lru, 7);
+   add(&lru, 7);
    DumpLRUFrom(lru);
 
+   return 0;
    printf("-- add 6\n");
-   lru = add(lru, 6);
+   add(&lru, 6);
    DumpLRUFrom(lru);
 
    printf("-- test refresh 4\n");
