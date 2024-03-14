@@ -17,20 +17,24 @@ int execute(cmpFunction af) {
     return af.function(af.valueA, af.valueB);
 }
 
-Page* initPage(int size) {
+Page* initPage() {
+	Page *page = malloc(sizeof(*page));
+	page->value = NULL;
+	page->next = NULL;
+
+	return page;
+}
+
+Page* initPages(int size) {
 	if (size < 1) {
 		return NULL;
 	}
 
-	Page *firstPage = malloc(sizeof(*firstPage));
-	firstPage->value = NULL;
-	firstPage->next = NULL;
+	Page *firstPage = initPage();
 
 	Page *currentPage = firstPage;
 	for (int i = 1; i < size; i++) {
-		Page *nextPage = malloc(sizeof(*nextPage));
-		nextPage->value = NULL;
-		nextPage->next = NULL;
+		Page *nextPage = initPage(); 
 		currentPage->next = nextPage;
 		currentPage = nextPage;
 	}
@@ -181,7 +185,7 @@ LRU* initLRU(int cacheSize, size_t valueSize, int(*cmpFunction)(void*, void*), c
 	}
 
 	LRU *lru = malloc(sizeof(*lru));
-	lru->Pages = initPage(cacheSize);
+	lru->Pages = initPages(cacheSize);
 	lru->cmpFunction = cmpFunction;
 	lru->fmtFunction = fmtFunction;
 	lru->valueSize = valueSize;
@@ -190,6 +194,7 @@ LRU* initLRU(int cacheSize, size_t valueSize, int(*cmpFunction)(void*, void*), c
 }
 
 
+// functions to test LRU of int
 int compInt(void* valueA, void* valueB) {
 	return *(int *)valueA == *(int *)valueB;
 }
@@ -203,6 +208,7 @@ char* formatInt(void* value, char* buff) {
 	return buff;
 }
 
+// functions to test LRU of char*
 int compStr(void* valueA, void* valueB) {
 	return strcmp((char *)valueA, (char *)valueB) == 0;
 }
@@ -216,9 +222,37 @@ char* formatStr(void* value, char* buff) {
 	return buff;
 }
 
+// functions to test LRU of struct
+typedef struct StructToCache StructToCache;
+struct StructToCache {
+	char* key;
+	char* value;
+};
+
+int compStructToCache(void *valueA, void *valueB) {
+	if (!valueA || !valueB) {
+		return 0;
+	}
+	StructToCache *strA = (StructToCache *)valueA;
+	StructToCache *strB = (StructToCache *)valueB;
+	return strcmp(strA->key, strB->key) == 0;
+}
+
+char* formatStructToCache(void* value, char* buff) {
+	if (value == NULL) {
+		return "value not initialized";
+	}
+	
+	StructToCache *str = (StructToCache *)value;
+	sprintf(buff, "%s: %s", str->key, str->value);
+	return buff;
+}
+
+
+
+
 int main() {
-   printf("Hello, World!\n");
-   Page* pages = initPage(5);
+   Page* pages = initPages(5);
 
    dumpPagesFrom(pages, formatInt);
    int valuesToCache[] = {1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
@@ -294,5 +328,32 @@ int main() {
    dump(lruStr);
 
    clear(lruStr);
+
+   printf("\n\n- test LRU of struct\n\n");
+   LRU *lruStruct = initLRU(5, sizeof(StructToCache), compStructToCache, formatStructToCache);
+
+   StructToCache *strtc1 = malloc(sizeof(*strtc1));
+   strtc1->key = "key1";
+   strtc1->value = "value1";
+   cache(lruStruct, strtc1);
+   dump(lruStruct);
+
+   StructToCache *strtc2 = malloc(sizeof(*strtc2));
+   strtc2->key = "c'est ma clef";
+   strtc2->value = "c'est ma value";
+   cache(lruStruct, strtc2);
+   dump(lruStruct);
+
+   StructToCache *strtc3 = malloc(sizeof(*strtc3));
+   strtc3->key = "key1";
+   strtc3->value = "value3";
+   cache(lruStruct, strtc3);
+   dump(lruStruct);
+
+   clear(lruStruct);
+   free(strtc3);
+   free(strtc2);
+   free(strtc1);
+
    return 0;
 }
