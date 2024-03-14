@@ -171,6 +171,7 @@ void dump(LRU *lru) {
 
 void clear(LRU *lru) {
 	destroy(lru->Pages);
+	free(lru);
 }
 
 LRU* initLRU(int cacheSize, size_t valueSize, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*)) {
@@ -207,7 +208,13 @@ int compStr(void* valueA, void* valueB) {
 }
 
 char* formatStr(void* value) {
-	return (char *) value ;
+	if (value == NULL) {
+		return "value not initialized";
+	}
+	
+	char* buff = malloc(255*sizeof(*buff));
+	memcpy(buff, value, 255*sizeof(*buff)); 
+	return buff;
 }
 
 int main() {
@@ -234,7 +241,6 @@ int main() {
    	dumpPagesFrom(pages, formatInt);
    }
    destroy(pages);
-	return 0;
 
    int valA = 3;
    int valB = 3;
@@ -264,19 +270,21 @@ int main() {
 	dump(lru);
    }
 
+   clear(lru);
+
    printf("\n\n- test LRU of char[]\n\n");
-   LRU *lruStr = initLRU(5, sizeof(char), compStr, formatStr);
+   LRU *lruStr = initLRU(5, 255*sizeof(char), compStr, formatStr);
 
    char testString[] = "coucou";
    printf("\n-- cache %s\n", testString);
    cache(lruStr, testString);
    dump(lruStr);
-   
+
    char testString2[] = "guigui";
    printf("\n-- cache %s\n", testString2);
    cache(lruStr, testString2);
    dump(lruStr);
-   
+
    char testString3[] = "tavu";
    printf("\n-- cache %s\n", testString3);
    cache(lruStr, testString3);
@@ -285,5 +293,7 @@ int main() {
    printf("\n-- read %s\n", testString);
    read(lruStr, testString);
    dump(lruStr);
+
+   clear(lruStr);
    return 0;
 }
