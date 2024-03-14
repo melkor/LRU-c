@@ -60,13 +60,14 @@ void destroy(Page* pages) {
 	free(pages);
 }
 
-void dumpPagesFrom(Page* fromPage, char* (*format)(void*) ) {
+void dumpPagesFrom(Page* fromPage, char* (*format)(void*, char*) ) {
 	int pageIndex = 0; 
 	do {
 		if (fromPage->value != NULL) {
-			char *toPrint = format(fromPage->value);
+			char *buff = malloc(255*sizeof(*buff));
+			char *toPrint = format(fromPage->value, buff);
 			printf("page %d: %s\n", pageIndex, toPrint);
-			free(toPrint);
+			free(buff);
 		} else {
 			printf("page %d: no value\n", pageIndex);
 		}
@@ -154,7 +155,7 @@ struct LRU {
 	Page *Pages;
 	size_t valueSize;
 	int (*cmpFunction)(void*, void*);
-	char* (*fmtFunction)(void*);
+	char* (*fmtFunction)(void*, char*);
 };
 
 Page* read(LRU *lru, void* value) {
@@ -174,7 +175,7 @@ void clear(LRU *lru) {
 	free(lru);
 }
 
-LRU* initLRU(int cacheSize, size_t valueSize, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*)) {
+LRU* initLRU(int cacheSize, size_t valueSize, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*, char*)) {
 	if (cacheSize < 1) {
 		return NULL;
 	}
@@ -193,12 +194,11 @@ int compInt(void* valueA, void* valueB) {
 	return *(int *)valueA == *(int *)valueB;
 }
 
-char* formatInt(void* value) {
+char* formatInt(void* value, char* buff) {
 	if (value == NULL) {
 		return "value not initialized";
 	}
 	
-	char* buff = malloc(255*sizeof(*buff));
 	sprintf(buff, "%d", *(int*)value);
 	return buff;
 }
@@ -207,12 +207,11 @@ int compStr(void* valueA, void* valueB) {
 	return strcmp((char *)valueA, (char *)valueB) == 0;
 }
 
-char* formatStr(void* value) {
+char* formatStr(void* value, char* buff) {
 	if (value == NULL) {
 		return "value not initialized";
 	}
 	
-	char* buff = malloc(255*sizeof(*buff));
 	memcpy(buff, value, 255*sizeof(*buff)); 
 	return buff;
 }
