@@ -75,15 +75,15 @@ void dumpPagesFrom(Page* fromPage, char* (*format)(void*) ) {
 	} while (fromPage);
 }
 
-void add(Page** firstPage, void* value, int (*cmpFunc)(void*, void*)) {
+void add(Page** firstPage, size_t size, void* value, int (*cmpFunc)(void*, void*)) {
 	Page *currentPage = *firstPage;
 	Page *previousPage = NULL;
 
 	while (currentPage) {
 		if (currentPage->value == NULL || currentPage->next == NULL) {
 			Page* newPage = malloc(sizeof(*newPage));
-			newPage->value = malloc(sizeof(*value));
-			memcpy(newPage->value, value, sizeof(*value));
+			newPage->value = malloc(size);
+			memcpy(newPage->value, value, size);
 			newPage->next = *firstPage;
 
 			*firstPage = newPage;
@@ -92,6 +92,9 @@ void add(Page** firstPage, void* value, int (*cmpFunc)(void*, void*)) {
 				currentPage = currentPage->next;
 			}
 			previousPage->next = NULL;
+			if (currentPage->value) {
+				free(currentPage->value);
+			}
 			free(currentPage);
 			break;
 		} else if (currentPage->value != NULL) {
@@ -108,7 +111,7 @@ void add(Page** firstPage, void* value, int (*cmpFunc)(void*, void*)) {
 				*firstPage = currentPage;
 				break;
 			}
-		} 
+		}
 		previousPage = currentPage;
 		currentPage = currentPage->next;
 	}
@@ -149,6 +152,7 @@ Page* get(Page** firstPage, void* value, int (*cmpFunc)(void*, void*)) {
 typedef struct LRU LRU;
 struct LRU {
 	Page *Pages;
+	size_t valueSize;
 	int (*cmpFunction)(void*, void*);
 	char* (*fmtFunction)(void*);
 };
@@ -158,7 +162,7 @@ Page* read(LRU *lru, void* value) {
 }
 
 void cache(LRU *lru, void* value) {
-	add(&lru->Pages, value, lru->cmpFunction);
+	add(&lru->Pages, lru->valueSize, value, lru->cmpFunction);
 }
 
 void dump(LRU *lru) {
@@ -169,15 +173,16 @@ void clear(LRU *lru) {
 	destroy(lru->Pages);
 }
 
-LRU* initLRU(int size, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*)) {
-	if (size < 1) {
+LRU* initLRU(int cacheSize, size_t valueSize, int(*cmpFunction)(void*, void*), char*(*fmtFunction)(void*)) {
+	if (cacheSize < 1) {
 		return NULL;
 	}
 
 	LRU *lru = malloc(sizeof(*lru));
-	lru->Pages = initPage(size);
+	lru->Pages = initPage(cacheSize);
 	lru->cmpFunction = cmpFunction;
 	lru->fmtFunction = fmtFunction;
+	lru->valueSize = valueSize;
 
 	return lru;
 }
@@ -189,7 +194,7 @@ int compInt(void* valueA, void* valueB) {
 
 char* formatInt(void* value) {
 	if (value == NULL) {
-		return "no value";
+		return "value not initialized";
 	}
 	
 	char* buff = malloc(255*sizeof(*buff));
@@ -210,13 +215,13 @@ int main() {
    Page* pages = initPage(5);
 
    dumpPagesFrom(pages, formatInt);
-   int valuesToCache[] = {1}; //, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
+   int valuesToCache[] = {1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 7, 6};
 
    int length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
    for (int i = 0; i < length; i++) {
 	int toCache = valuesToCache[i];
 	printf("-- add %d\n", toCache);
-	add(&pages, &toCache, compInt);
+	add(&pages, sizeof(toCache), &toCache, compInt);
 	dumpPagesFrom(pages, formatInt);
    }
    
@@ -242,7 +247,7 @@ int main() {
    printf("-- test cmp: %d\n", test);
 
    printf("\n\n- test LRU\n\n");
-   LRU *lru = initLRU(5, compInt, formatInt);
+   LRU *lru = initLRU(5, sizeof(int), compInt, formatInt);
    length = sizeof(valuesToCache) / sizeof(valuesToCache[0]);
    for (int i = 0; i < length; i++) {
 	int toCache = valuesToCache[i];
@@ -260,7 +265,7 @@ int main() {
    }
 
    printf("\n\n- test LRU of char[]\n\n");
-   LRU *lruStr = initLRU(5, compStr, formatStr);
+   LRU *lruStr = initLRU(5, sizeof(char), compStr, formatStr);
 
    char testString[] = "coucou";
    printf("\n-- cache %s\n", testString);
