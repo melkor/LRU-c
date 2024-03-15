@@ -1,0 +1,2 @@
+> gcc -pedantic main.c
+> valgrind --leak-check=full --show-reachable=yes ./a.out  
